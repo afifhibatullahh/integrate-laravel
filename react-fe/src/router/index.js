@@ -2,19 +2,24 @@ import { createBrowserRouter } from "react-router-dom";
 import Home from "../views/Home";
 import Posts from "../views/posts";
 import DetailPost from "../views/posts/detail";
-import EditPost from "../views/posts/edit";
-import AddPost from "../views/posts/add";
 import MainLayout from "../layout/MainLayout";
 import Login from "../views/authentication/Login";
 import AuthGuard from "../guard/AuthGuard";
 import Users from "../views/users";
 import AddUser from "../views/users/add";
 import DetailUser from "../views/users/detail";
+import ListUsersGithub from "../views/list-profile-github";
+import MainGuard from "../guard/MainGuard";
+import FormPost from "../views/posts/form";
 
 const routes = [
   {
     path: "/",
-    element: <MainLayout />,
+    element: (
+      <MainGuard>
+        <MainLayout />
+      </MainGuard>
+    ),
     children: [
       { path: "/", element: <Home /> },
       {
@@ -26,11 +31,11 @@ const routes = [
           },
           {
             path: "add",
-            element: <AddPost />,
+            element: <FormPost />,
           },
           {
             path: "edit/:id",
-            element: <EditPost />,
+            element: <FormPost />,
           },
           {
             path: ":id",
@@ -64,6 +69,10 @@ const routes = [
         <Login />
       </AuthGuard>
     ),
+  },
+  {
+    path: "/list-user-github",
+    element: <ListUsersGithub />,
   },
 ];
 

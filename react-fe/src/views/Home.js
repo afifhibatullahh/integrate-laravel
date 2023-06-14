@@ -1,35 +1,38 @@
 import React from "react";
-import { useQuery } from "react-query";
-import { GET_POSTS } from "../services/posts";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import { DELETE_POST, GET_POSTS } from "../services/posts";
 import {
   Box,
+  Button,
   Container,
   Grid,
-  IconButton,
   Paper,
   Table,
-  TableBody,
-  TableCell,
   TableContainer,
-  TableFooter,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TextField,
 } from "@mui/material";
 import {
   createColumnHelper,
-  flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import InputDebounce from "../components/Input/InputDebounce";
-import TablePaginationActions from "../components/table/TablePaginationActions";
-
-const apiTinyMCE = "p3ipyvync28zcgbzp3l2i88u7z2x6lksw3kqene7yq3u33dj";
+import { useDispatch } from "react-redux";
+import { openAlertMessage } from "../store/slice/snackbarSlice";
+import useDialogConfirm from "../components/feedback/CDialog";
+import CTableHead from "../components/table/CTableHead";
+import CTableBody from "../components/table/CTableBody";
+import CTableFooter from "../components/table/CTableFooter";
+import { useNavigate } from "react-router-dom";
+import { logout } from "../store/slice/authSlice";
 
 const Home = () => {
   const columnHelper = createColumnHelper();
+
+  const dispatch = useDispatch();
+  const { DialogConfirmComponent, dialogConfirmOpen } = useDialogConfirm();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
   const columns = [
     columnHelper.accessor("judul", {
       cell: (info) => info.getValue(),
@@ -37,7 +40,13 @@ const Home = () => {
     }),
     columnHelper.accessor("thumbnail", {
       id: "thumbnail",
-      cell: (info) => <img src={info.getValue()} width={30} height={30} />,
+      cell: (info) => (
+        <img
+          src={`http://127.0.0.1:8000/thumbnails/${info.getValue()}`}
+          width={30}
+          height={30}
+        />
+      ),
       header: () => <span>Thumbnail</span>,
     }),
     columnHelper.accessor("status", {
@@ -45,6 +54,30 @@ const Home = () => {
     }),
     columnHelper.accessor("tgl_publikasi", {
       header: "Publikasi",
+    }),
+    columnHelper.accessor("action", {
+      header: "Aksi",
+      cell: (info) => (
+        <>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() => navigate(`posts/edit/${info.row.original.id}`)}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
+            onClick={() =>
+              dialogConfirmOpen("Yakin hapus data ini", info.row.original.id)
+            }
+          >
+            Delete
+          </Button>
+        </>
+      ),
     }),
   ];
 
@@ -71,6 +104,30 @@ const Home = () => {
     }
   );
 
+  const deleteMutation = useMutation((data) => DELETE_POST(data), {
+    onSuccess: (data) => {
+      dispatch(
+        openAlertMessage({
+          message: data?.data?.message,
+          severity: "success",
+        })
+      );
+      queryClient.invalidateQueries(["posts", fetchDataOptions]);
+    },
+    onError: (error) => {
+      dispatch(
+        openAlertMessage({
+          message: error?.response?.data?.message,
+          severity: "error",
+        })
+      );
+    },
+  });
+
+  const handleDelete = (data) => {
+    deleteMutation.mutateAsync(data);
+  };
+
   const table = useReactTable({
     data: dataQuery.data?.data?.data?.data ?? [],
     columns,
@@ -93,8 +150,8 @@ const Home = () => {
           flexDirection: "column",
         }}
       >
-        <Grid container>
-          <Grid item xs={12} md={4} sx={{ my: 2 }}>
+        <Grid container sx={{ my: 2 }} justifyContent="space-between">
+          <Grid item xs={12} md={4}>
             <InputDebounce
               debounceTime={300}
               value={search}
@@ -104,56 +161,60 @@ const Home = () => {
               }}
             />
           </Grid>
+          <Grid item>
+            <Button variant="outlined" onClick={() => navigate("posts/add")}>
+              Tambah
+            </Button>
+          </Grid>
         </Grid>
         <TableContainer component={Paper}>
           <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
-            <TableHead>
-              <TableRow>
-                {table.getHeaderGroups()[0].headers.map((header) => {
-                  return (
-                    <TableCell key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder ? null : (
-                        <div>
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TablePagination
-                  colSpan={3}
-                  count={dataQuery.data?.data?.data?.total}
-                  rowsPerPage={10}
-                  page={pageNumber}
-                  onPageChange={handleChangePage}
-                  ActionsComponent={TablePaginationActions}
-                  rowsPerPageOptions={false}
-                />
-              </TableRow>
-            </TableFooter>
+            <CTableHead
+              table={table}
+              status={status}
+              onChange={(e) =>
+                setServerSide({
+                  ...fetchDataOptions,
+                  status: e.target.value,
+                })
+              }
+            />
+            <CTableBody table={table} />
+            <CTableFooter
+              count={dataQuery.data?.data?.data?.total}
+              page={pageNumber}
+              lastPage={dataQuery.data?.data?.data?.last_page}
+              onPageChange={handleChangePage}
+            />
           </Table>
         </TableContainer>
+        <DialogConfirmComponent
+          value="Hapus"
+          handleConfirm={(data) => handleDelete(data)}
+        />
+      </Box>
+      <Box display={"flex"} justifyContent="space-between">
+        <Button
+          variant="outlined"
+          color="info"
+          sx={{ mt: 5 }}
+          onClick={() => {
+            navigate("/list-user-github");
+          }}
+        >
+          Github users
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          sx={{ mt: 5 }}
+          onClick={() => {
+            dispatch(logout());
+            navigate("/login");
+          }}
+        >
+          Logout
+        </Button>
       </Box>
     </Container>
   );

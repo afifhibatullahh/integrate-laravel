@@ -18,6 +18,7 @@ const Login = () => {
   React.useEffect(() => {
     if (token) {
       navigate("/");
+      window.location.reload();
     }
     if (isError) {
       dispatch(openAlertMessage({ message: "Login Gagal", severity: "error" }));

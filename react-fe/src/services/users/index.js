@@ -1,6 +1,7 @@
-import axios from "../config";
-import { DELETE_API, GET_API, PUT_API, POST_API } from "services/helper";
+import { GET_API } from "../helper";
 
-const GET_USERS = () => {
+const GET_USER = () => {
   return GET_API(`user`);
 };
+
+export { GET_USER };

@@ -1,17 +1,12 @@
 import React from "react";
+import Login from "../views/authentication/Login";
+import { GET_USER } from "../services/users";
+import { useQuery } from "react-query";
 
 const MainGuard = ({ children }) => {
-  //   const { user, loading, accessToken, refetch } = useUser();
-  //   const isOnline = window.navigator.onLine;
-  //   const { pathname } = useLocation();
+  const { isSuccess } = useQuery(["isLogin"], GET_USER);
 
-  //   useEffect(() => {
-  //     refetch();
-  //   }, [pathname]);
-
-  //   if (!isOnline && localStorage.getItem("token")) return <>{children}</>;
-  //   if (!user && !accessToken) return <Navigate to="/login" />;
-  //   if (loading && accessToken) return <Loader />;
+  if (!isSuccess) return <Login />;
   return <>{children}</>;
 };
 

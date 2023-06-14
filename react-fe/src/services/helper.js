@@ -5,10 +5,8 @@ const headers = {
   Authorization: authorization,
 };
 
-const GET_API = async (url, signal) => {
-  return await axios
-    .get(url, { headers, signal: signal })
-    .then((response) => response);
+const GET_API = async (url) => {
+  return await axios.get(url, { headers }).then((response) => response);
 };
 
 const POST_API = async (url, body) => {
