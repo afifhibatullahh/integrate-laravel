@@ -124,7 +124,6 @@ class PostController extends Controller
 
         $validator = Validator::make($request->all(), [
             'judul' => 'required',
-            'thumbnail' => 'image|mimes:jpeg,png,jpg',
             'konten' => 'required',
             'status' => 'required',
             'tgl_publikasi' => 'required',
@@ -139,9 +138,13 @@ class PostController extends Controller
             ]);
         }
 
-        $post =  Post::where('id', $id)->get();
+        $post =  Post::where('id', $id)->get()[0];
 
-        if ($request->thumbnail != '') {
+        $thumbnail_name = $post->thumbnail;
+
+        $isImage = is_file($request->thumbnail);
+
+        if ($request->thumbnail != '' && $isImage) {
             $path = public_path('thumbnails/');
 
             if ($post->thumbnail != ''  && $post->thumbnail != null) {
@@ -153,7 +156,14 @@ class PostController extends Controller
             $request->thumbnail->move($path, $thumbnail_name);
         }
 
-        $updated = Post::where('id', $id)->update($request->all());
+
+        $updated = Post::where('id', $id)->update([
+            'judul' => $request->judul,
+            'thumbnail' => $thumbnail_name,
+            'konten' => $request->konten,
+            'status' => $request->status,
+            'tgl_publikasi' => $request->tgl_publikasi,
+        ]);
 
         if (!$updated) {
             return response()->json([
